@@ -19,11 +19,11 @@ const PLATE_HEIGHT       = 15;
 const PLATE_WIDTH        = window.innerWidth*0.15;
 
 const DEFAULT_BALL_COLOR = '#ccff99';
-const DEFAULT_BALL_SIZE  = 20;
-const DEFAULT_BALL_LEFT  = (BOARD_WIDTH/4)-(DEFAULT_BALL_SIZE/2);
-const DEFAULT_BALL_TOP   = (BOARD_HEIGHT/4)-(DEFAULT_BALL_SIZE/2);
+const BALL_SIZE  = 20;
+const DEFAULT_BALL_LEFT  = (BOARD_WIDTH/4)-(BALL_SIZE/2);
+const DEFAULT_BALL_TOP   = (BOARD_HEIGHT/4)-(BALL_SIZE/2);
 
-const BALL_STEP_SIZE = 2;
+const BALL_STEP_SIZE = 1;
 
 const START_TEXT = 'Welcome! Press button to start.'
 
@@ -31,13 +31,13 @@ class Arkanoid extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      paddleLeftPosition: PADDLE_LEFT,
-      paddleTopPosition: PADDLE_TOP,
-      ballTopPosition: DEFAULT_BALL_TOP,
-      ballLeftPosition: DEFAULT_BALL_LEFT,
+      paddleLeft: PADDLE_LEFT,
+      paddleTop: PADDLE_TOP,
+      ballTop: DEFAULT_BALL_TOP,
+      ballLeft: DEFAULT_BALL_LEFT,
       leftStepSize: BALL_STEP_SIZE,
       topStepSize: BALL_STEP_SIZE,
-      ballSize: DEFAULT_BALL_SIZE,
+      ballSize: BALL_SIZE,
       ballColor: DEFAULT_BALL_COLOR,
       plateWidth: PLATE_WIDTH,
       plateHeight: PLATE_HEIGHT,
@@ -70,27 +70,27 @@ class Arkanoid extends Component {
   }
 
   handleKeyDown = (event) => {
-    if (event.keyCode === 39 && (this.state.paddleLeftPosition + PADDLE_STEP_SIZE) <= BOARD_WIDTH - PADDLE_WIDTH){
-      this.setState({paddleLeftPosition: (this.state.paddleLeftPosition + PADDLE_STEP_SIZE)})
-    } else if (event.keyCode === 37 && (this.state.paddleLeftPosition - PADDLE_STEP_SIZE) >= 0) {
-      this.setState({paddleLeftPosition: (this.state.paddleLeftPosition - PADDLE_STEP_SIZE)})
+    if (event.keyCode === 39 && (this.state.paddleLeft + PADDLE_STEP_SIZE) <= BOARD_WIDTH - PADDLE_WIDTH){
+      this.setState({paddleLeft: (this.state.paddleLeft + PADDLE_STEP_SIZE)})
+    } else if (event.keyCode === 37 && (this.state.paddleLeft - PADDLE_STEP_SIZE) >= 0) {
+      this.setState({paddleLeft: (this.state.paddleLeft - PADDLE_STEP_SIZE)})
     }
   }
 
   startGame(text) {
     if (this.state.buttonText === 'Restart') {
-      this.setState({ballTopPosition: DEFAULT_BALL_TOP})
-      this.setState({ballLeftPosition: DEFAULT_BALL_LEFT})
+      this.setState({ballTop: DEFAULT_BALL_TOP})
+      this.setState({ballLeft: DEFAULT_BALL_LEFT})
       this.setState({ballDisplay: 'block'})
       this.setState({score: 0})
-      if (this.state.ballTopPosition === DEFAULT_BALL_TOP){
+      if (this.state.ballTop === DEFAULT_BALL_TOP){
         this.setState({buttonDisplay: 'none'})
         this.setState({textDisplay: 'none'})
         this.calculatePlatePositions();
         this.gameLoop();
       } else {
-        this.setState({ballTopPosition: DEFAULT_BALL_TOP})
-        this.setState({ballLeftPosition: DEFAULT_BALL_LEFT})
+        this.setState({ballTop: DEFAULT_BALL_TOP})
+        this.setState({ballLeft: DEFAULT_BALL_LEFT})
         this.startGame()
       }
     } else if (this.state.buttonText === 'Start'){
@@ -106,19 +106,21 @@ class Arkanoid extends Component {
 
   toggelY() {
     this.setState({topStepSize: -this.state.topStepSize})
+    this.setState({ballColor: this.pickColor()})
   }
 
   toggelX() {
     this.setState({leftStepSize: -this.state.leftStepSize})
+    this.setState({ballColor: this.pickColor()})
   }
 
   calculatePlatePositions() {
-    const amount = Math.floor(BOARD_WIDTH/(PLATE_WIDTH+2+50))
+    const amount = Math.floor(BOARD_WIDTH/(PLATE_WIDTH+2))
     const rows = Math.floor((BOARD_HEIGHT/4)/(PLATE_HEIGHT+2))/2
     const arr = [];
     for (var i = 0; i < rows; i++) {
       for (var j = 0; j < amount; j++) {
-        arr.push([(i*(PLATE_HEIGHT+2) + 10*PLATE_HEIGHT), (j*(PLATE_WIDTH+2) + ((BOARD_WIDTH - (amount*PLATE_WIDTH))/2)), ROWS_COLORS[i]])
+        arr.push([(i*(PLATE_HEIGHT+2) + PLATE_HEIGHT), (j*(PLATE_WIDTH+2) + ((BOARD_WIDTH - (amount*PLATE_WIDTH))/2)), ROWS_COLORS[i]])
       }
     }
     this.setState({platePositions: arr})
@@ -128,37 +130,19 @@ class Arkanoid extends Component {
     return this.state.platePositions.length === 0 ? true : false
   }
   checkFail() {
-    return this.state.ballTopPosition > (PADDLE_TOP + PADDLE_HEIGHT) ? true : false
+    return this.state.ballTop + BALL_SIZE >= (PADDLE_TOP + PADDLE_HEIGHT) ? true : false
   }
 
   gameLoop() {
-    if (this.state.ballLeftPosition >= (BOARD_WIDTH - DEFAULT_BALL_SIZE - BALL_STEP_SIZE) || this.state.ballLeftPosition <= 0){
-      this.toggelX()
-      this.setState({ballColor: this.pickColor()})
-    }
-
-    if (this.state.ballTopPosition <= 0){
-      this.toggelY()
-      this.setState({ballColor: this.pickColor()})
-    }
-
-    if (this.state.ballTopPosition >= (PADDLE_TOP - (DEFAULT_BALL_SIZE/2) - PADDLE_HEIGHT) && this.state.ballLeftPosition >= this.state.paddleLeftPosition && this.state.ballLeftPosition <= (this.state.paddleLeftPosition + 100)){
-      this.toggelY()
-      this.setState({ballColor: this.pickColor()})
-    }
-
     for (var i = 0; i < this.state.platePositions.length; i++) {
-      if ((this.state.ballTopPosition + DEFAULT_BALL_SIZE) >= this.state.platePositions[i][0] && (this.state.ballTopPosition) <= (this.state.platePositions[i][0] + PLATE_HEIGHT)
-      && (this.state.ballLeftPosition + DEFAULT_BALL_SIZE) >= this.state.platePositions[i][1] && this.state.ballLeftPosition <= (this.state.platePositions[i][1] + PLATE_WIDTH)) {
+      if ((this.state.ballTop + BALL_SIZE + BALL_STEP_SIZE) >= (this.state.platePositions[i][0] - 1) && (this.state.ballTop) <= (this.state.platePositions[i][0] + PLATE_HEIGHT + 1)
+      && (this.state.ballLeft + BALL_SIZE + BALL_STEP_SIZE) >= this.state.platePositions[i][1] && this.state.ballLeft <= (this.state.platePositions[i][1] + PLATE_WIDTH)) {
         this.state.platePositions.splice(i, 1);
-        this.setState({ballColor: this.pickColor()})
         this.setState({score: this.state.score + 100})
         this.toggelY()
       }
     }
 
-    this.setState({ballTopPosition: (this.state.ballTopPosition + this.state.topStepSize)})
-    this.setState({ballLeftPosition: (this.state.ballLeftPosition + this.state.leftStepSize)})
     if (this.checkWon()) {
       console.log('won')
       this.setState({ballDisplay: 'none'})
@@ -174,16 +158,37 @@ class Arkanoid extends Component {
       this.setState({text: 'GAME OVER'})
       this.setState({buttonText: 'Restart'})
     } else {
+
+      if (this.state.ballLeft >= (BOARD_WIDTH - BALL_SIZE - BALL_STEP_SIZE) || this.state.ballLeft <= 0){
+        this.toggelX()
+      }
+
+      if (this.state.ballTop <= 0){
+        this.toggelY()
+      }
+
+      if ((this.state.ballTop + BALL_STEP_SIZE + BALL_SIZE) > PADDLE_TOP && (this.state.ballTop + BALL_STEP_SIZE + BALL_SIZE) > PADDLE_TOP + PADDLE_HEIGHT/4
+      && (this.state.ballLeft + BALL_STEP_SIZE + BALL_SIZE) >= this.state.paddleLeft + 1
+      && (this.state.ballLeft + BALL_STEP_SIZE) <= (this.state.paddleLeft + PADDLE_WIDTH + 2)){
+        this.toggelY()
+        this.toggelX()
+      } else if ((this.state.ballTop + BALL_STEP_SIZE + BALL_SIZE) >= PADDLE_TOP
+      && (this.state.ballLeft + BALL_STEP_SIZE + BALL_SIZE) >= this.state.paddleLeft + 1
+      && (this.state.ballLeft + BALL_STEP_SIZE) <= (this.state.paddleLeft + PADDLE_WIDTH + 2)){
+        this.toggelY()
+      }
+
+      this.setState({ballTop: (this.state.ballTop + this.state.topStepSize)})
+      this.setState({ballLeft: (this.state.ballLeft + this.state.leftStepSize)})
       setTimeout(function() { this.gameLoop(); }.bind(this), 0);
     }
-
   }
   render() {
     return (
       <div className="App">
         <div className="Arkanoid-Board" style={{width: `${BOARD_WIDTH}px`, height: `${BOARD_HEIGHT}px`}}>
           <Text className="Text" display={this.state.textDisplay}>{this.state.text}</Text>
-          <Paddle className="Paddle" leftPosition={this.state.paddleLeftPosition} topPosition={this.state.paddleTopPosition}></Paddle>
+          <Paddle className="Paddle" leftPosition={this.state.paddleLeft} topPosition={this.state.paddleTop}></Paddle>
           <Plate
             className="Plate"
             platePositions={this.state.platePositions}
@@ -193,8 +198,8 @@ class Arkanoid extends Component {
           </Plate>
           <Ball
             className="Ball"
-            ballTopPosition={this.state.ballTopPosition}
-            ballLeftPosition={this.state.ballLeftPosition}
+            ballTop={this.state.ballTop}
+            ballLeft={this.state.ballLeft}
             onClick={this.state.gameLoop}
             ballSize={this.state.ballSize}
             ballColor={this.state.ballColor}
@@ -232,9 +237,9 @@ const Plate = ({className, platePositions, plateWidth, plateHeight}) => {
     </div>
   )
 }
-const Ball = ({className, ballLeftPosition, ballTopPosition, onClick, ballSize, ballColor, display}) => {
+const Ball = ({className, ballLeft, ballTop, onClick, ballSize, ballColor, display}) => {
   return (<div className={className}
-    style={{left: `${ballLeftPosition}px`, top: `${ballTopPosition}px`, width: `${ballSize}px`, height: `${ballSize}px`, backgroundColor: `${ballColor}`, display: `${display}`}}
+    style={{left: `${ballLeft}px`, top: `${ballTop}px`, width: `${ballSize}px`, height: `${ballSize}px`, backgroundColor: `${ballColor}`, display: `${display}`}}
     onClick={onClick}>
     </div>);
 }
